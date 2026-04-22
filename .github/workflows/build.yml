@@ -1,14 +1,55 @@
-name: prograde_test_taker
-description: Professional-grade test taking app with JSON import, analytics, categories, and quiz workflows.
-publish_to: "none"
-version: 1.0.0+1
+name: Build Flutter app
 
-environment:
-  sdk: ">=3.4.0 <4.0.0"
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
-dependencies:
-  flutter:
-    sdk: flutter
+concurrency:
+  group: flutter-${{ github.ref }}
+  cancel-in-progress: true
 
-flutter:
-  uses-material-design: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build Android APK
+        run: flutter build apk --debug
+
+      - name: Build web
+        run: flutter build web --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
